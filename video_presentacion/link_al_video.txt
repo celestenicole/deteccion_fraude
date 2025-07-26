@@ -1,0 +1,5 @@
+🎥 Video de presentación del proyecto:
+https://drive.google.com/file/d/11QzxC5WghHm4tUQ82jrwiPArHS7ot08z/view?usp=drivesdk 
+
+Duración: 14 minutos.
+Descripción: Explicación completa del proyecto de detección de fraude en transacciones bancarias utilizando AWS Bedrock y SageMaker.
