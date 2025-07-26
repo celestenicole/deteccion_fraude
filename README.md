@@ -41,6 +41,26 @@ Asegúrate de tener instalado:
 - Git (opcional)
 
 ### 🔧 Instalación de dependencias
+---
+
+## 🎥 Video de Presentación
+
+Puedes ver la explicación completa del proyecto (14 minutos) en el siguiente enlace:
+
+🔗 [Ver video de presentación](https://drive.google.com/file/d/11QzxC5WghHm4tUQ82jrwiPArHS7ot08z/view?usp=drivesdk )
+
+Incluye una demo de la API, comparación de modelos y visualización de métricas.
+
+---
+
+## 👩‍💻 Autora
+
+*Celeste Nicole Lluen Delgado*  
+Ingeniería de Sistemas - UTP  
+[GitHub Portafolio](https://celestenicole.github.io)  
+✉ celestelluen.delgado05@gmail.com  
+
+---
 
 Activa el entorno virtual:
 
