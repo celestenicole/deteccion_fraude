@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Credit Risk API - Dashboard de Métricas</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="10">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #5a2323; color: #333; }
+        h1 { color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric { display: flex; margin-bottom: 10px; }
+        .metric-label { font-weight: bold; width: 200px; }
+        .status-iniciando { background-color: #6fe7d7; color: white; padding: 3px 8px; border-radius: 4px; }
+        .status-saludable { background-color: #440541; color: white; padding: 3px 8px; border-radius: 4px; }
+        .status-degradado { background-color: #3f1774; color: white; padding: 3px 8px; border-radius: 4px; }
+        .status-advertencia { background-color: #7a527a; color: white; padding: 3px 8px; border-radius: 4px; }
+        .status-critico { background-color: #d9534f; color: white; padding: 3px 8px; border-radius: 4px; }
+        #metrics-json { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; font-family: monospace; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer; }
+        .btn:hover { background-color: #c00d8a; }
+        .chart-container { height: 250px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dashboard de Metricas - Credit Risk API</h1>
+            <button class="btn" onclick="loadMetrics()">Actualizar</button>
+        </div>
+
+        <div class="card">
+            <h2>Estado del Sistema</h2>
+            <div class="metric">
+                <div class="metric-label">Estado:</div>
+                <div id="system-status">Cargando...</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Timestamp:</div>
+                <div id="timestamp">Cargando...</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Tiempo de actividad:</div>
+                <div id="uptime">Cargando...</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Errores totales:</div>
+                <div id="total-errors">Cargando...</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Logs:</div>
+                <div id="logs-path">Cargando...</div>
+            </div>
+        </div>
+
+        <div class="card" id="predictions-card">
+            <h2>Estadisticas de Prediccion</h2>
+            <div id="no-predictions" style="display:none;">
+                <p>No hay predicciones aún. Realiza algunas predicciones para ver estadísticas detalladas.</p>
+            </div>
+            <div id="prediction-stats">
+                <div class="metric">
+                    <div class="metric-label">Total predicciones:</div>
+                    <div id="total-predictions">Cargando...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Tasa de concordancia:</div>
+                    <div id="agreement-rate">Cargando...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Tiempo promedio de respuesta:</div>
+                    <div id="avg-response-time">Cargando...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Distribucion ML:</div>
+                    <div id="ml-distribution">Cargando...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Distribucion Bedrock:</div>
+                    <div id="bedrock-distribution">Cargando...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Graficos</h2>
+            <div class="chart-container">
+                <canvas id="distribution-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Datos JSON</h2>
+            <pre id="metrics-json">Cargando...</pre>
+        </div>
+    </div>
+
+    <script>
+        let distributionChart = null;
+
+        // Función para cargar métricas desde la API
+        function loadMetrics() {
+            fetch('/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    // Mostrar datos JSON
+                    document.getElementById('metrics-json').textContent = JSON.stringify(data, null, 2);
+                    
+                    // Actualizar estado del sistema
+                    const statusElem = document.getElementById('system-status');
+                    statusElem.innerHTML = `<span class="status-${data.status?.toLowerCase() || 'iniciando'}">${data.status || 'INICIANDO'}</span>`;
+                    
+                    // Actualizar métricas básicas
+                    document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString();
+                    document.getElementById('uptime').textContent = formatTime(data.system_uptime);
+                    document.getElementById('total-errors').textContent = data.total_errors;
+                    document.getElementById('logs-path').textContent = data.logs_path;
+                    
+                    // Si hay predicciones, mostrar estadísticas detalladas
+                    if (data.prediction_count === 0 || !data.total_predictions) {
+                        document.getElementById('no-predictions').style.display = 'block';
+                        document.getElementById('prediction-stats').style.display = 'none';
+                    } else {
+                        document.getElementById('no-predictions').style.display = 'none';
+                        document.getElementById('prediction-stats').style.display = 'block';
+                        
+                        document.getElementById('total-predictions').textContent = data.total_predictions;
+                        document.getElementById('agreement-rate').textContent = `${data.agreement_rate.toFixed(1)}%`;
+                        document.getElementById('avg-response-time').textContent = `${data.avg_response_time.toFixed(3)} segundos`;
+                        
+                        const mlGood = data.ml_distribution?.good || 0;
+                        const mlBad = data.ml_distribution?.bad || 0;
+                        document.getElementById('ml-distribution').textContent = `Good: ${mlGood}, Bad: ${mlBad}`;
+                        
+                        const bedrockGood = data.bedrock_distribution?.good || 0;
+                        const bedrockBad = data.bedrock_distribution?.bad || 0;
+                        document.getElementById('bedrock-distribution').textContent = `Good: ${bedrockGood}, Bad: ${bedrockBad}`;
+                        
+                        // Actualizar gráfico de distribución
+                        updateDistributionChart(mlGood, mlBad, bedrockGood, bedrockBad);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando métricas:', error);
+                    document.getElementById('metrics-json').textContent = 'Error cargando métricas: ' + error.message;
+                });
+        }
+        
+        // Formatear tiempo en segundos a un formato legible
+        function formatTime(seconds) {
+            if (!seconds) return "0 segundos";
+            
+            seconds = Math.floor(seconds);
+            if (seconds < 60) return `${seconds} segundos`;
+            
+            const minutes = Math.floor(seconds / 60);
+            seconds = seconds % 60;
+            if (minutes < 60) return `${minutes} minutos, ${seconds} segundos`;
+            
+            const hours = Math.floor(minutes / 60);
+            minutes = minutes % 60;
+            return `${hours} horas, ${minutes} minutos, ${seconds} segundos`;
+        }
+        
+        // Actualizar el gráfico de distribución
+        function updateDistributionChart(mlGood, mlBad, bedrockGood, bedrockBad) {
+            let ctx = document.getElementById('distribution-chart').getContext('2d');
+            
+            if (distributionChart) {
+                distributionChart.destroy();
+            }
+            
+            distributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['ML Model', 'Bedrock Model'],
+                    datasets: [
+                        {
+                            label: 'Good Risk',
+                            data: [mlGood, bedrockGood],
+                            backgroundColor: 'rgba(92, 184, 92, 0.7)',
+                            borderColor: '#5cb85c',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Bad Risk',
+                            data: [mlBad, bedrockBad],
+                            backgroundColor: 'rgba(217, 83, 79, 0.7)',
+                            borderColor: '#d9534f',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribucion de Predicciones'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Cargar métricas al iniciar
+        window.onload = function() {
+            loadMetrics();
+            // Auto-refrescar cada 10 segundos
+            setInterval(loadMetrics, 10000);
+        };
+    </script>
+</body>
+</html>

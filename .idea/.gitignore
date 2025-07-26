@@ -1,0 +1,19 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# Entorno virtual
+venv/
+
+# Claves y configuraciones privadas
+.env
+
+# Archivos de caché y temporales
+_pycache_/
+*.py[cod]
+*.log
+.ipynb_checkpoints/
